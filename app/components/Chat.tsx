@@ -1,6 +1,4 @@
 // components/Chat.tsx
-"use client";
-
 import { useState, useEffect } from "react";
 import { db, auth } from "../../lib/firebase";
 import {
@@ -19,8 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { onAuthStateChanged } from "firebase/auth";
 
-export default function Chat() {
-  const [user, setUser] = useState<any>(null);
+interface ChatProps {
+  user: any;
+}
+
+export default function Chat({ user }: ChatProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -30,19 +31,8 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("User authenticated:", user.email);
-        setUser(user);
-        fetchUserLanguage(user.uid);
-      } else {
-        console.log("User not authenticated");
-        setUser(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+    fetchUserLanguage(user.uid);
+  }, [user]);
 
   const fetchUserLanguage = async (uid: string) => {
     try {
@@ -62,7 +52,6 @@ export default function Chat() {
 
   useEffect(() => {
     if (inRoom && user && userLanguage) {
-      console.log("Setting up message listener for room:", roomCode);
       const q = query(
         collection(db, `rooms/${roomCode}/messages`),
         orderBy("timestamp")
@@ -70,7 +59,6 @@ export default function Chat() {
       const unsubscribe = onSnapshot(
         q,
         async (snapshot) => {
-          console.log("Received snapshot:", snapshot.docs.length, "messages");
           const newMessages = await Promise.all(
             snapshot.docs.map(async (doc) => {
               const data = doc.data();
@@ -84,7 +72,6 @@ export default function Chat() {
               return { id: doc.id, ...data };
             })
           );
-          console.log("Processed messages:", newMessages);
           setMessages(newMessages);
         },
         (error) => {
@@ -96,7 +83,6 @@ export default function Chat() {
       );
 
       return () => {
-        console.log("Unsubscribing from message listener");
         unsubscribe();
       };
     }
@@ -104,14 +90,12 @@ export default function Chat() {
 
   const translateMessage = async (text: string, targetLanguage: string) => {
     try {
-      console.log(`Translating message to ${targetLanguage}:`, text);
       const response = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, targetLanguage }),
       });
       const data = await response.json();
-      console.log("Translated text:", data.translatedText);
       return data.translatedText;
     } catch (error) {
       console.error("Translation error:", error);
@@ -124,22 +108,18 @@ export default function Chat() {
     setError(null);
     try {
       if (roomCode) {
-        console.log("Attempting to join room:", roomCode);
         const roomQuery = query(
           collection(db, "rooms"),
           where("code", "==", roomCode)
         );
         const roomSnapshot = await getDocs(roomQuery);
         if (!roomSnapshot.empty) {
-          console.log("Room found, joining");
           setInRoom(true);
         } else {
-          console.log("Room not found");
           setError("Room not found. Please check the room code.");
         }
       }
     } catch (error) {
-      console.error("Error joining room:", error);
       setError(
         "An error occurred while joining the room. Please check your internet connection and try again."
       );
@@ -156,7 +136,6 @@ export default function Chat() {
         .toString(36)
         .substring(2, 8)
         .toUpperCase();
-      console.log("Creating new room with code:", newRoomCode);
       await setDoc(doc(db, "rooms", newRoomCode), {
         code: newRoomCode,
         createdBy: user.uid,
@@ -164,9 +143,7 @@ export default function Chat() {
       });
       setRoomCode(newRoomCode);
       setInRoom(true);
-      console.log("Room created successfully");
     } catch (error) {
-      console.error("Error creating room:", error);
       setError(
         "An error occurred while creating the room. Please check your internet connection and try again."
       );
@@ -180,7 +157,6 @@ export default function Chat() {
     setError(null);
     if (newMessage.trim() && inRoom) {
       try {
-        console.log("Sending message:", newMessage);
         const docRef = await addDoc(
           collection(db, `rooms/${roomCode}/messages`),
           {
@@ -189,20 +165,14 @@ export default function Chat() {
             timestamp: new Date(),
           }
         );
-        console.log("Message sent successfully, doc ID:", docRef.id);
         setNewMessage("");
       } catch (error) {
-        console.error("Error sending message:", error);
         setError(
           "Failed to send message. Please check your internet connection and try again."
         );
       }
     }
   };
-
-  if (!user) {
-    return <div>Please log in to use the chat.</div>;
-  }
 
   if (!inRoom) {
     return (
