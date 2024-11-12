@@ -34,7 +34,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 import {
   Popover,
   PopoverContent,
@@ -342,7 +342,7 @@ export default function Chat({ user }: ChatProps) {
                 <PopoverContent className="w-80 p-0" align="end">
                   <EmojiPicker
                     onEmojiClick={handleEmojiClick}
-                    theme={isDark ? "dark" : "light"}
+                    theme={isDark ? Theme.DARK : Theme.LIGHT}
                   />
                 </PopoverContent>
               </Popover>
