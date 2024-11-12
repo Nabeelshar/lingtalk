@@ -1,4 +1,5 @@
-// components/Chat.tsx
+"use client";
+
 import { useState, useEffect } from "react";
 import { db, auth } from "../../lib/firebase";
 import {
@@ -15,7 +16,30 @@ import {
 } from "firebase/firestore";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Loader2,
+  Send,
+  Plus,
+  LogIn,
+  Smile,
+  LogOut,
+  Moon,
+  Sun,
+} from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ChatProps {
   user: any;
@@ -29,7 +53,18 @@ export default function Chat({ user }: ChatProps) {
   const [userLanguage, setUserLanguage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle("dark");
+    setIsDark(!isDark);
+  };
   useEffect(() => {
     fetchUserLanguage(user.uid);
   }, [user]);
@@ -174,50 +209,154 @@ export default function Chat({ user }: ChatProps) {
     }
   };
 
+  const leaveRoom = () => {
+    setInRoom(false);
+    setRoomCode("");
+    setMessages([]);
+  };
+
+  const handleEmojiClick = (emojiObject: any) => {
+    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji);
+  };
   if (!inRoom) {
     return (
-      <div className="space-y-4">
-        <Input
-          type="text"
-          placeholder="Enter Room Code"
-          value={roomCode}
-          onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-        />
-        <Button onClick={joinRoom} disabled={isLoading}>
-          {isLoading ? "Joining..." : "Join Room"}
-        </Button>
-        <Button onClick={createRoom} disabled={isLoading}>
-          {isLoading ? "Creating..." : "Create New Room"}
-        </Button>
-        {error && <div className="text-red-500">{error}</div>}
+      <div className="min-h-screen w-full max-w-2xl mx-auto p-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>Join or Create a Chat Room</CardTitle>
+            <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+              {isDark ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              type="text"
+              placeholder="Enter Room Code"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+            />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                onClick={joinRoom}
+                disabled={isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <LogIn className="mr-2 h-4 w-4" />
+                )}
+                Join Room
+              </Button>
+              <Button
+                onClick={createRoom}
+                disabled={isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                Create Room
+              </Button>
+            </div>
+          </CardContent>
+          {error && (
+            <CardFooter>
+              <p className="text-red-500 text-sm">{error}</p>
+            </CardFooter>
+          )}
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md space-y-4">
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 h-64 overflow-y-auto">
-        {messages.map((msg) => (
-          <div key={msg.id} className="mb-2">
-            <strong>{msg.sender}:</strong>{" "}
-            {msg.sender !== user.email
-              ? msg.translatedText || msg.text
-              : msg.text}
-          </div>
-        ))}
+    <div className="fixed inset-0 flex flex-col">
+      <div className="w-full max-w-2xl mx-auto flex-1 flex flex-col p-4">
+        <Card className="flex-1 flex flex-col">
+          <CardHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <CardTitle>Chat Room</CardTitle>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-normal">
+                  Room Code: {roomCode}
+                </span>
+                <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+                  {isDark ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${
+                    msg.sender === user.email ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      msg.sender === user.email
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
+                  >
+                    <p className="text-xs opacity-70 mb-1">{msg.sender}</p>
+                    <p className="break-words">
+                      {msg.sender !== user.email
+                        ? msg.translatedText || msg.text
+                        : msg.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <CardFooter className="border-t p-4 gap-4 flex-col">
+            <form onSubmit={sendMessage} className="flex w-full gap-2">
+              <Input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1"
+              />
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    theme={isDark ? "dark" : "light"}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button type="submit" size="icon">
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+            <Button onClick={leaveRoom} variant="outline" className="w-full">
+              <LogOut className="mr-2 h-4 w-4" />
+              Leave Room
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
-      <form onSubmit={sendMessage} className="flex">
-        <Input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-grow mr-2"
-        />
-        <Button type="submit">Send</Button>
-      </form>
-      <div>Room Code: {roomCode}</div>
-      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 }

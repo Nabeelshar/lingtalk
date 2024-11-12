@@ -1,73 +1,50 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { auth, db } from "../../lib/firebase";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState } from "react"
+import { auth, db } from "../../lib/firebase"
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth"
+import { doc, setDoc } from "firebase/firestore"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export default function Login() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [language, setLanguage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ text: "", type: "" });
+export function LoginComponent() {
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [language, setLanguage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState({ text: "", type: "" })
 
   const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage({ text: "", type: "" });
+    e.preventDefault()
+    setIsLoading(true)
+    setMessage({ text: "", type: "" })
     try {
       if (isSignUp) {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           `${username}@example.com`,
           password
-        );
+        )
         await setDoc(doc(db, "users", userCredential.user.uid), {
           username,
           language,
-        });
-        setMessage({ text: "Account created successfully!", type: "success" });
+        })
+        setMessage({ text: "Account created successfully!", type: "success" })
       } else {
-        await signInWithEmailAndPassword(
-          auth,
-          `${username}@example.com`,
-          password
-        );
-        setMessage({ text: "Logged in successfully!", type: "success" });
+        await signInWithEmailAndPassword(auth, `${username}@example.com`, password)
+        setMessage({ text: "Logged in successfully!", type: "success" })
       }
     } catch (error) {
-      console.error("Authentication error:", error);
-      setMessage({
-        text: "An error occurred during authentication. Please try again.",
-        type: "error",
-      });
+      console.error("Authentication error:", error)
+      setMessage({ text: "An error occurred during authentication. Please try again.", type: "error" })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -81,13 +58,7 @@ export default function Login() {
       </CardHeader>
       <CardContent>
         {message.text && (
-          <div
-            className={`mb-4 p-2 rounded ${
-              message.type === "success"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
+          <div className={`mb-4 p-2 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             {message.text}
           </div>
         )}
@@ -143,11 +114,9 @@ export default function Login() {
           className="w-full"
           onClick={() => setIsSignUp(!isSignUp)}
         >
-          {isSignUp
-            ? "Already have an account? Login"
-            : "Don't have an account? Sign Up"}
+          {isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up"}
         </Button>
       </CardFooter>
     </Card>
-  );
+  )
 }
