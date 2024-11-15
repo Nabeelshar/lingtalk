@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useRef } from "react";
-import { db, auth } from "@/lib/firebase";
+import { useState, useEffect, useRef } from "react"
+import { db, auth } from "@/lib/firebase"
 import {
   collection,
   addDoc,
@@ -13,16 +13,16 @@ import {
   getDocs,
   where,
   setDoc,
-} from "firebase/firestore";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "firebase/firestore"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Loader2,
   Send,
@@ -32,70 +32,71 @@ import {
   LogOut,
   Moon,
   Sun,
-} from "lucide-react";
-import EmojiPicker, { Theme } from "emoji-picker-react";
+} from "lucide-react"
+import EmojiPicker, { Theme } from "emoji-picker-react"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 
 interface ChatProps {
-  user: any;
+  user: any
 }
 
 interface Message {
-  id: string;
-  text: string;
-  sender: string;
-  timestamp: Date;
-  read?: boolean;
+  id: string
+  text: string
+  sender: string
+  timestamp: Date
+  read?: boolean
+  translatedText?: string
 }
 
 const containsOnlyEmojis = (text: string) => {
-  const emojiRegex = /^[\p{Emoji}]+$/u;
-  return emojiRegex.test(text);
-};
+  const emojiRegex = /^[\p{Emoji}]+$/u
+  return emojiRegex.test(text)
+}
 
 export default function Chat({ user }: ChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [roomCode, setRoomCode] = useState("");
-  const [inRoom, setInRoom] = useState(false);
-  const [userLanguage, setUserLanguage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState("")
+  const [roomCode, setRoomCode] = useState("")
+  const [inRoom, setInRoom] = useState(false)
+  const [userLanguage, setUserLanguage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setIsDark(isDarkMode);
-  }, []);
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetchUserLanguage(user.uid);
-  }, [user]);
+    const isDarkMode = document.documentElement.classList.contains("dark")
+    setIsDark(isDarkMode)
+  }, [])
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    fetchUserLanguage(user.uid)
+  }, [user])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   useEffect(() => {
     if (inRoom && user && userLanguage) {
       const q = query(
         collection(db, `rooms/${roomCode}/messages`),
         orderBy("timestamp")
-      );
+      )
       const unsubscribe = onSnapshot(
         q,
         async (snapshot) => {
           const newMessages = await Promise.all(
             snapshot.docs.map(async (doc) => {
-              const data = doc.data();
+              const data = doc.data()
               if (
                 data.sender !== user.email &&
                 !containsOnlyEmojis(data.text)
@@ -103,59 +104,59 @@ export default function Chat({ user }: ChatProps) {
                 const translatedText = await translateMessage(
                   data.text,
                   userLanguage
-                );
-                return { id: doc.id, ...data, translatedText };
+                )
+                return { id: doc.id, ...data, translatedText }
               }
-              return { id: doc.id, ...data };
+              return { id: doc.id, ...data }
             })
-          );
-          setMessages(newMessages);
+          )
+          setMessages(newMessages)
         },
         (error) => {
-          console.error("Error in message listener:", error);
+          console.error("Error in message listener:", error)
           setError(
             "Failed to receive messages. Please check your internet connection."
-          );
+          )
         }
-      );
+      )
 
       return () => {
-        unsubscribe();
-      };
+        unsubscribe()
+      }
     }
-  }, [inRoom, roomCode, user, userLanguage]);
+  }, [inRoom, roomCode, user, userLanguage])
 
   useEffect(() => {
     if (newMessage) {
-      setIsTyping(true);
-      const timeout = setTimeout(() => setIsTyping(false), 1000);
-      return () => clearTimeout(timeout);
+      setIsTyping(true)
+      const timeout = setTimeout(() => setIsTyping(false), 1000)
+      return () => clearTimeout(timeout)
     }
-  }, [newMessage]);
+  }, [newMessage])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   const toggleDarkMode = () => {
-    document.documentElement.classList.toggle("dark");
-    setIsDark(!isDark);
-  };
+    document.documentElement.classList.toggle("dark")
+    setIsDark(!isDark)
+  }
 
   const fetchUserLanguage = async (uid: string) => {
     try {
-      const userDoc = await getDoc(doc(db, "users", uid));
+      const userDoc = await getDoc(doc(db, "users", uid))
       if (userDoc.exists()) {
-        const language = userDoc.data().language;
-        setUserLanguage(language);
+        const language = userDoc.data().language
+        setUserLanguage(language)
       } else {
-        console.log("User document not found");
+        console.log("User document not found")
       }
     } catch (error) {
-      console.error("Error fetching user language:", error);
-      setError("Failed to fetch user language. Please try again.");
+      console.error("Error fetching user language:", error)
+      setError("Failed to fetch user language. Please try again.")
     }
-  };
+  }
 
   const translateMessage = async (text: string, targetLanguage: string) => {
     try {
@@ -163,67 +164,67 @@ export default function Chat({ user }: ChatProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, targetLanguage }),
-      });
-      const data = await response.json();
-      return data.translatedText;
+      })
+      const data = await response.json()
+      return data.translatedText
     } catch (error) {
-      console.error("Translation error:", error);
-      return text; // Return original text if translation fails
+      console.error("Translation error:", error)
+      return text // Return original text if translation fails
     }
-  };
+  }
 
   const joinRoom = async () => {
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
     try {
       if (roomCode) {
         const roomQuery = query(
           collection(db, "rooms"),
           where("code", "==", roomCode)
-        );
-        const roomSnapshot = await getDocs(roomQuery);
+        )
+        const roomSnapshot = await getDocs(roomQuery)
         if (!roomSnapshot.empty) {
-          setInRoom(true);
+          setInRoom(true)
         } else {
-          setError("Room not found. Please check the room code.");
+          setError("Room not found. Please check the room code.")
         }
       }
     } catch (error) {
       setError(
         "An error occurred while joining the room. Please check your internet connection and try again."
-      );
+      )
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const createRoom = async () => {
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
     try {
       const newRoomCode = Math.random()
         .toString(36)
         .substring(2, 8)
-        .toUpperCase();
+        .toUpperCase()
       await setDoc(doc(db, "rooms", newRoomCode), {
         code: newRoomCode,
         createdBy: user.uid,
         createdAt: new Date(),
-      });
-      setRoomCode(newRoomCode);
-      setInRoom(true);
+      })
+      setRoomCode(newRoomCode)
+      setInRoom(true)
     } catch (error) {
       setError(
         "An error occurred while creating the room. Please check your internet connection and try again."
-      );
+      )
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
     if (newMessage.trim() && inRoom) {
       try {
         await addDoc(collection(db, `rooms/${roomCode}/messages`), {
@@ -231,25 +232,25 @@ export default function Chat({ user }: ChatProps) {
           sender: user.email,
           timestamp: new Date(),
           read: false,
-        });
-        setNewMessage("");
+        })
+        setNewMessage("")
       } catch (error) {
         setError(
           "Failed to send message. Please check your internet connection."
-        );
+        )
       }
     }
-  };
+  }
 
   const leaveRoom = () => {
-    setInRoom(false);
-    setRoomCode("");
-    setMessages([]);
-  };
+    setInRoom(false)
+    setRoomCode("")
+    setMessages([])
+  }
 
   const handleEmojiClick = (emojiObject: any) => {
-    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji);
-  };
+    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji)
+  }
 
   if (!inRoom) {
     return (
@@ -306,7 +307,7 @@ export default function Chat({ user }: ChatProps) {
           )}
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -390,5 +391,5 @@ export default function Chat({ user }: ChatProps) {
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }
